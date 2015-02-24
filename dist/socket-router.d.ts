@@ -1,4 +1,4 @@
-declare module SocketRouter {
+declare module "socket-router" {
     class _Base {
         private _routesTable;
         private _callbacks;
@@ -20,4 +20,6 @@ declare module SocketRouter {
         send(socket: any, path: string, data?: Object, callback?: (err?, data?) => {}): void;
     }
 }
-export = SocketRouter;
+declare module "socket-router" {
+    export = SocketRouter;
+}
