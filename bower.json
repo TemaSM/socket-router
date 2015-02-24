@@ -1,0 +1,21 @@
+{
+  "name": "socket-router",
+  "version": "1.0.0",
+  "homepage": "https://github.com/techmatt101/socket-router",
+  "authors": [
+    "techmatt101 <matt@kempmail.co.uk>"
+  ],
+  "description": "Simple Socket Routing",
+  "main": "dist/socket-router.js",
+  "moduleType": [
+    "amd",
+    "globals",
+    "node"
+  ],
+  "keywords": [
+    "socket",
+    "router",
+    "routing"
+  ],
+  "license": "MIT"
+}
