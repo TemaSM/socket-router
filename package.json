@@ -1,0 +1,30 @@
+{
+  "name": "SocketRouter",
+  "version": "1.0.0",
+  "description": "Simple Socket Routing",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc index.ts --outDir dist --module commonjs && tsc index.ts -d --outDir dist --module commonjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/techmatt101/SocketRouter.git"
+  },
+  "keywords": [
+    "socket",
+    "router",
+    "routing"
+  ],
+  "author": "Matthew Kemp <matt@kempmail.co.uk>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/techmatt101/SocketRouter/issues"
+  },
+  "homepage": "https://github.com/techmatt101/SocketRouter",
+  "typescript": {
+    "definitions": [
+      "dist/socket-router.d.ts"
+    ]
+  }
+}
