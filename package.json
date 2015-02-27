@@ -1,6 +1,6 @@
 {
   "name": "socket-router",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Simple Socket Routing",
   "main": "dist/socket-router.js",
   "scripts": {

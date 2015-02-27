@@ -1,4 +1,4 @@
-declare module "socket-router" {
+declare module SocketRouter {
     class _Base {
         private _routesTable;
         private _callbacks;
