@@ -4,7 +4,7 @@ module SocketRouter {
         private _callbacks = [];
 
 
-        route(path : string, handler : (data?, reply? : Reply) => void){
+        route(path : string, handler : (reply? : Reply, data?) => void){
             path = path.replace(/\s/g, '').toLowerCase();
             if(typeof this._routesTable[path] !== 'undefined') {
                 throw new Error('Route path "' + path + '" already taken');
@@ -17,25 +17,32 @@ module SocketRouter {
                 if(typeof msg !== 'Object' && msg.sr !== 1) return;
 
                 if(typeof msg.replyTo !== 'undefined') {
-                    this._callbacks[msg.replyTo](msg.data);
+                    if(typeof msg.error !== 'undefined') {
+                        this._callbacks[msg.replyTo](new Error(msg.error));
+                    } else {
+                        this._callbacks[msg.replyTo](null, msg.data);
+                    }
                     this._callbacks[msg.replyTo] = null;
                     return;
                 }
 
-                var self = this, reply,
-                    handler = this._routesTable[msg.path];
-
+                var reply, handler = this._routesTable[msg.path];
                 if(typeof msg.replyId !== 'undefined') {
                     reply = (data) => {
-                        self.reply(socket, msg.replyId, data);
+                        this.reply(socket, msg.replyId, data);
+                    };
+                    reply.error = (msg) => {
+                        this.replyError(socket, msg.replyId, msg);
                     };
                 }
                 if(typeof handler === 'undefined') {
                     var starHandler = this._routesTable['*'];
                     if(typeof starHandler !== 'undefined') {
                         starHandler(reply, msg.data);
-                        return;
+                    } else if(typeof msg.replyId !== 'undefined') {
+                        this.replyError(socket, msg.replyId, '404 path not found');
                     }
+                    return;
                 }
                 handler(reply, msg.data);
             });
@@ -45,6 +52,13 @@ module SocketRouter {
             this.sendMessage(socket, {
                 replyTo: replyId,
                 data: data
+            });
+        }
+
+        protected replyError(socket, replyId, errorMsg : string) {
+            this.sendMessage(socket, {
+                replyTo: replyId,
+                error: errorMsg
             });
         }
 
@@ -67,6 +81,7 @@ module SocketRouter {
 
     export interface Reply {
         (data : any)
+        error(msg : string);
     }
 
     export class Client extends _Base {
@@ -78,7 +93,7 @@ module SocketRouter {
             this.listen(socket);
         }
 
-        send(path : string, data? : Object, callback? : (err?, data?) => {}) {
+        send(path : string, data? : any, callback? : (err?, data?) => void) {
             if(this._socket === null) {
                 throw new Error('No socket server');
             }
@@ -94,7 +109,7 @@ module SocketRouter {
     }
 
     export class Server extends _Base {
-        send(socket, path : string, data? : Object, callback? : (err?, data?) => {}) {
+        send(socket, path : string, data? : any, callback? : (err?, data?) => void) {
             var msg : any = {
                 path: path,
                 data: data

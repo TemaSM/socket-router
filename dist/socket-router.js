@@ -25,22 +25,33 @@ var SocketRouter;
                 if (typeof msg !== 'Object' && msg.sr !== 1)
                     return;
                 if (typeof msg.replyTo !== 'undefined') {
-                    _this._callbacks[msg.replyTo](msg.data);
+                    if (typeof msg.error !== 'undefined') {
+                        _this._callbacks[msg.replyTo](new Error(msg.error));
+                    }
+                    else {
+                        _this._callbacks[msg.replyTo](null, msg.data);
+                    }
                     _this._callbacks[msg.replyTo] = null;
                     return;
                 }
-                var self = _this, reply, handler = _this._routesTable[msg.path];
+                var reply, handler = _this._routesTable[msg.path];
                 if (typeof msg.replyId !== 'undefined') {
                     reply = function (data) {
-                        self.reply(socket, msg.replyId, data);
+                        _this.reply(socket, msg.replyId, data);
+                    };
+                    reply.error = function (msg) {
+                        _this.replyError(socket, msg.replyId, msg);
                     };
                 }
                 if (typeof handler === 'undefined') {
                     var starHandler = _this._routesTable['*'];
                     if (typeof starHandler !== 'undefined') {
                         starHandler(reply, msg.data);
-                        return;
                     }
+                    else if (typeof msg.replyId !== 'undefined') {
+                        _this.replyError(socket, msg.replyId, '404 path not found');
+                    }
+                    return;
                 }
                 handler(reply, msg.data);
             });
@@ -49,6 +60,12 @@ var SocketRouter;
             this.sendMessage(socket, {
                 replyTo: replyId,
                 data: data
+            });
+        };
+        _Base.prototype.replyError = function (socket, replyId, errorMsg) {
+            this.sendMessage(socket, {
+                replyTo: replyId,
+                error: errorMsg
             });
         };
         _Base.prototype.queCallback = function (callback) {

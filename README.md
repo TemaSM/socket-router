@@ -7,6 +7,27 @@ Module also allows routes to optionally reply to messages received from clients.
     $ npm install socket-router --save
     $ bower install socket-router --save
 
+## API
+// TODO: Better docs
+### Server
+
+#### server.***listen*** ( socket )
+
+#### server.***route*** ( path, callback( reply, data ) )
+
+#### server.***send*** ( socket, path, callback( reply, data ) )
+
+### Client
+
+#### server.***listen*** ( socket )
+
+#### server.***route*** ( path, callback( reply, data ) )
+
+#### server.***send*** ( path, callback( reply, data ) )
+
+### Reply ( data )
+
+
 ##  Usage
 
 ### Example 1: Node Server to Node Server Communication
@@ -48,12 +69,12 @@ var SocketRouter = require('socket-router');
 var socketServer = new JsonSocket(new net.Socket());
 socketServer.connect(3000, '127.0.0.1');
 
-var server = new SocketRouting.Client(socketServer);
+JsonSocket.prototype.send = JsonSocket.prototype.sendMessage; //TODO: Hack :/
 
-var server = new SocketRouter.Server();
-var socketServer = net.createServer();
+var server = new SocketRouter.Client(socketServer);
 
-server.send('addition', { a: 4, b: 8 }, function(data) {
+server.send('addition', { a: 4, b: 8 }, function(err, data) {
+    if(err) throw err;
     console.log("Answer:", data.result);
 });
 ```
@@ -123,7 +144,8 @@ JSONSocketWrapper.prototype.send = function (data) {
 var ws = new WebSocket('ws://localhost:3000');
 var server = new SocketRouting.Client(new JSONSocketWrapper(ws));
 
-server.send('addition', { a: 4, b: 8 }, function(data) {
+server.send('addition', { a: 4, b: 8 }, function(err, data) {
+    if(err) throw err;
     console.log("Answer:", data.result);
 });
 ```
