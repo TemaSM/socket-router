@@ -4,7 +4,7 @@ module SocketRouter {
         private _callbacks = [];
 
 
-        route(path : string, handler : (reply? : Reply, data?) => void){
+        route(path : string, handler : (reply? : Reply<any>, data?) => void){
             path = path.replace(/\s/g, '').toLowerCase();
             if(typeof this._routesTable[path] !== 'undefined') {
                 throw new Error('Route path "' + path + '" already taken');
@@ -79,9 +79,9 @@ module SocketRouter {
         }
     }
 
-    export interface Reply {
-        (data : any)
-        error(msg : string);
+    export interface Reply<T> {
+        (data : T) : void
+        error(msg : string) : void;
     }
 
     export class Client extends _Base {
