@@ -16,10 +16,10 @@ declare module SocketRouter {
     class Client extends _Base {
         private _socket;
         constructor(socket: any);
-        send(path: string, data?: any, callback?: (err?, data?) => void): void;
+        send<T>(path: string, data?: any): Promise<T>;
     }
     class Server extends _Base {
-        send(socket: any, path: string, data?: any, callback?: (err?, data?) => void): void;
+        send<T>(socket: any, path: string, data?: any): Promise<T>;
     }
 }
 

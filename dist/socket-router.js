@@ -26,10 +26,10 @@ var SocketRouter;
                     return;
                 if (typeof msg.replyTo !== 'undefined') {
                     if (typeof msg.error !== 'undefined') {
-                        _this._callbacks[msg.replyTo](new Error(msg.error));
+                        _this._callbacks[msg.replyTo].reject(new Error(msg.error));
                     }
                     else {
-                        _this._callbacks[msg.replyTo](null, msg.data);
+                        _this._callbacks[msg.replyTo].resolve(msg.data);
                     }
                     _this._callbacks[msg.replyTo] = null;
                     return;
@@ -93,18 +93,19 @@ var SocketRouter;
             this._socket = socket;
             this.listen(socket);
         }
-        Client.prototype.send = function (path, data, callback) {
-            if (this._socket === null) {
-                throw new Error('No socket server');
-            }
-            var msg = {
-                path: path,
-                data: data
-            };
-            if (callback) {
-                msg.replyId = this.queCallback(callback);
-            }
-            this.sendMessage(this._socket, msg);
+        Client.prototype.send = function (path, data) {
+            var _this = this;
+            return new Promise(function (resolve, reject) {
+                if (_this._socket === null) {
+                    throw new Error('No socket server');
+                }
+                var msg = {
+                    path: path,
+                    data: data
+                };
+                msg.replyId = _this.queCallback({ resolve: resolve, reject: reject });
+                _this.sendMessage(_this._socket, msg);
+            });
         };
         return Client;
     })(_Base);
@@ -114,15 +115,16 @@ var SocketRouter;
         function Server() {
             _super.apply(this, arguments);
         }
-        Server.prototype.send = function (socket, path, data, callback) {
-            var msg = {
-                path: path,
-                data: data
-            };
-            if (callback) {
-                msg.replyId = this.queCallback(callback);
-            }
-            this.sendMessage(socket, msg);
+        Server.prototype.send = function (socket, path, data) {
+            var _this = this;
+            return new Promise(function (resolve, reject) {
+                var msg = {
+                    path: path,
+                    data: data
+                };
+                msg.replyId = _this.queCallback({ resolve: resolve, reject: reject });
+                _this.sendMessage(socket, msg);
+            });
         };
         return Server;
     })(_Base);
