@@ -39,8 +39,8 @@ var SocketRouter;
                     reply = function (data) {
                         _this.reply(socket, msg.replyId, data);
                     };
-                    reply.error = function (msg) {
-                        _this.replyError(socket, msg.replyId, msg);
+                    reply.error = function (error) {
+                        _this.replyError(socket, msg.replyId, error);
                     };
                 }
                 if (typeof handler === 'undefined') {
@@ -62,7 +62,10 @@ var SocketRouter;
                 data: data
             });
         };
-        _Base.prototype.replyError = function (socket, replyId, errorMsg) {
+        _Base.prototype.replyError = function (socket, replyId, error) {
+            var errorMsg;
+            if(error instanceof Error) errorMsg = error.message;
+            if(typeof errorMsg !== 'string' || errorMsg === '') errorMsg = 'Unknown Error';
             this.sendMessage(socket, {
                 replyTo: replyId,
                 error: errorMsg

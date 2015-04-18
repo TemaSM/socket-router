@@ -33,8 +33,8 @@ module SocketRouter {
                     reply = (data) => {
                         this.reply(socket, msg.replyId, data);
                     };
-                    reply.error = (msg) => {
-                        this.replyError(socket, msg.replyId, msg);
+                    reply.error = (error) => {
+                        this.replyError(socket, msg.replyId, error);
                     };
                 }
                 if (typeof handler === 'undefined') {
@@ -57,7 +57,10 @@ module SocketRouter {
             });
         }
 
-        protected replyError (socket, replyId, errorMsg : string) {
+        protected replyError (socket, replyId, error : Error | string) {
+            var errorMsg;
+            if(error instanceof Error) errorMsg = error.message;
+            if(typeof errorMsg !== 'string' || errorMsg === '') errorMsg = 'Unknown Error';
             this.sendMessage(socket, {
                 replyTo: replyId,
                 error: errorMsg
@@ -83,7 +86,7 @@ module SocketRouter {
 
     export interface Reply<T> {
         (data : T) : void
-        error(msg : string) : void;
+        error(msg : Error | string) : void;
     }
 
     export class Client extends _Base {

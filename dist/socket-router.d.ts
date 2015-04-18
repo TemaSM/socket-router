@@ -11,7 +11,7 @@ declare module SocketRouter {
     }
     interface Reply<T> {
         (data: T): void;
-        error(msg: string): void;
+        error(msg : Error | string) : void;
     }
     class Client extends _Base {
         private _socket;
