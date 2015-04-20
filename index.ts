@@ -6,7 +6,7 @@ module SocketRouter {
         private _callbacks = [];
 
 
-        route (path : string, handler : (reply? : Reply<any>, data?) => void) {
+        route<T> (path : string, handler : ((data?) => Promise<T>) | ((reply? : Reply<T>, data?) => void)) {
             path = path.replace(/\s/g, '').toLowerCase();
             if (typeof this._routesTable[path] !== 'undefined') {
                 throw new Error('Route path "' + path + '" already taken');
@@ -19,35 +19,53 @@ module SocketRouter {
                 if (typeof msg !== 'Object' && msg.sr !== 1) return;
 
                 if (typeof msg.replyTo !== 'undefined') {
+                    var callback = this._callbacks[msg.replyTo];
                     if (typeof msg.error !== 'undefined') {
-                        this._callbacks[msg.replyTo].reject(new Error(msg.error));
+                        callback.reject(new Error(msg.error));
+                        if (typeof callback.callback !== 'undefined') {
+                            callback.callback(new Error(msg.error), null);
+                        }
                     } else {
-                        this._callbacks[msg.replyTo].resolve(msg.data);
+                        callback.resolve(msg.data);
+                        if (typeof callback.callback !== 'undefined') {
+                            callback.callback(null, msg.data);
+                        }
                     }
                     this._callbacks[msg.replyTo] = null;
+
                     return;
                 }
 
-                var reply, handler = this._routesTable[msg.path];
-                if (typeof msg.replyId !== 'undefined') {
-                    reply = (data) => {
-                        this.reply(socket, msg.replyId, data);
-                    };
-                    reply.error = (error) => {
-                        this.replyError(socket, msg.replyId, error);
-                    };
-                }
+                var handler = this._routesTable[msg.path];
                 if (typeof handler === 'undefined') {
                     var starHandler = this._routesTable['*'];
                     if (typeof starHandler !== 'undefined') {
-                        starHandler(reply, msg.data);
+                        this.fireHandler(starHandler,  socket, msg);
                     } else if (typeof msg.replyId !== 'undefined') {
                         this.replyError(socket, msg.replyId, '404 path not found');
                     }
                     return;
                 }
-                handler(reply, msg.data);
+                this.fireHandler(handler, socket, msg);
             });
+        }
+
+        protected fireHandler (handler, socket, msg) {
+            if(handler instanceof Promise) {
+                handler(msg.data).then((data) => {
+                    this.reply(socket, msg.replyId, data);
+                }).catch((error) => {
+                    this.replyError(socket, msg.replyId, error);
+                });
+            } else {
+                var reply : any = (data) => {
+                    this.reply(socket, msg.replyId, data);
+                };
+                reply.error = (error) => {
+                    this.replyError(socket, msg.replyId, error);
+                };
+                handler(reply, msg.data);
+            }
         }
 
         protected reply (socket, replyId, data) {
@@ -59,8 +77,8 @@ module SocketRouter {
 
         protected replyError (socket, replyId, error : Error | string) {
             var errorMsg;
-            if(error instanceof Error) errorMsg = error.message;
-            if(typeof errorMsg !== 'string' || errorMsg === '') errorMsg = 'Unknown Error';
+            if (error instanceof Error) errorMsg = error.message;
+            if (typeof errorMsg !== 'string' || errorMsg === '') errorMsg = 'Unknown Error';
             this.sendMessage(socket, {
                 replyTo: replyId,
                 error: errorMsg
@@ -85,7 +103,7 @@ module SocketRouter {
     }
 
     export interface Reply<T> {
-        (data : T) : void
+        (data? : T) : void
         error(msg : Error | string) : void;
     }
 
@@ -98,7 +116,7 @@ module SocketRouter {
             this.listen(socket);
         }
 
-        send<T> (path : string, data? : any) : Promise<T> {
+        send<T> (path : string, data? : any, callback? : (err?, data?) => void) : Promise<T> {
             return new Promise((resolve, reject) => {
                 if (this._socket === null) {
                     throw new Error('No socket server');
@@ -107,20 +125,20 @@ module SocketRouter {
                     path: path,
                     data: data
                 };
-                msg.replyId = this.queCallback({ resolve: resolve, reject: reject });
+                msg.replyId = this.queCallback({ resolve: resolve, reject: reject, callback: callback });
                 this.sendMessage(this._socket, msg);
             });
         }
     }
 
     export class Server extends _Base {
-        send<T> (socket, path : string, data? : any) : Promise<T> {
+        send<T> (socket, path : string, data? : any, callback? : (err?, data?) => void) : Promise<T> {
             return new Promise((resolve, reject) => {
                 var msg : any = {
                     path: path,
                     data: data
                 };
-                msg.replyId = this.queCallback({ resolve: resolve, reject: reject });
+                msg.replyId = this.queCallback({ resolve: resolve, reject: reject, callback: callback });
                 this.sendMessage(socket, msg);
             });
         }

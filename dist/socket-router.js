@@ -25,36 +25,54 @@ var SocketRouter;
                 if (typeof msg !== 'Object' && msg.sr !== 1)
                     return;
                 if (typeof msg.replyTo !== 'undefined') {
+                    var callback = _this._callbacks[msg.replyTo];
                     if (typeof msg.error !== 'undefined') {
-                        _this._callbacks[msg.replyTo].reject(new Error(msg.error));
+                        callback.reject(new Error(msg.error));
+                        if (typeof callback.callback !== 'undefined') {
+                            callback.callback(new Error(msg.error), null);
+                        }
                     }
                     else {
-                        _this._callbacks[msg.replyTo].resolve(msg.data);
+                        callback.resolve(msg.data);
+                        if (typeof callback.callback !== 'undefined') {
+                            callback.callback(null, msg.data);
+                        }
                     }
                     _this._callbacks[msg.replyTo] = null;
                     return;
                 }
-                var reply, handler = _this._routesTable[msg.path];
-                if (typeof msg.replyId !== 'undefined') {
-                    reply = function (data) {
-                        _this.reply(socket, msg.replyId, data);
-                    };
-                    reply.error = function (error) {
-                        _this.replyError(socket, msg.replyId, error);
-                    };
-                }
+                var handler = _this._routesTable[msg.path];
                 if (typeof handler === 'undefined') {
                     var starHandler = _this._routesTable['*'];
                     if (typeof starHandler !== 'undefined') {
-                        starHandler(reply, msg.data);
+                        _this.fireHandler(starHandler, socket, msg);
                     }
                     else if (typeof msg.replyId !== 'undefined') {
                         _this.replyError(socket, msg.replyId, '404 path not found');
                     }
                     return;
                 }
-                handler(reply, msg.data);
+                _this.fireHandler(handler, socket, msg);
             });
+        };
+        _Base.prototype.fireHandler = function (handler, socket, msg) {
+            var _this = this;
+            if (handler instanceof Promise) {
+                handler(msg.data).then(function (data) {
+                    _this.reply(socket, msg.replyId, data);
+                }).catch(function (error) {
+                    _this.replyError(socket, msg.replyId, error);
+                });
+            }
+            else {
+                var reply = function (data) {
+                    _this.reply(socket, msg.replyId, data);
+                };
+                reply.error = function (error) {
+                    _this.replyError(socket, msg.replyId, error);
+                };
+                handler(reply, msg.data);
+            }
         };
         _Base.prototype.reply = function (socket, replyId, data) {
             this.sendMessage(socket, {
@@ -64,8 +82,10 @@ var SocketRouter;
         };
         _Base.prototype.replyError = function (socket, replyId, error) {
             var errorMsg;
-            if(error instanceof Error) errorMsg = error.message;
-            if(typeof errorMsg !== 'string' || errorMsg === '') errorMsg = 'Unknown Error';
+            if (error instanceof Error)
+                errorMsg = error.message;
+            if (typeof errorMsg !== 'string' || errorMsg === '')
+                errorMsg = 'Unknown Error';
             this.sendMessage(socket, {
                 replyTo: replyId,
                 error: errorMsg
@@ -96,7 +116,7 @@ var SocketRouter;
             this._socket = socket;
             this.listen(socket);
         }
-        Client.prototype.send = function (path, data) {
+        Client.prototype.send = function (path, data, callback) {
             var _this = this;
             return new Promise(function (resolve, reject) {
                 if (_this._socket === null) {
@@ -106,7 +126,7 @@ var SocketRouter;
                     path: path,
                     data: data
                 };
-                msg.replyId = _this.queCallback({ resolve: resolve, reject: reject });
+                msg.replyId = _this.queCallback({ resolve: resolve, reject: reject, callback: callback });
                 _this.sendMessage(_this._socket, msg);
             });
         };
@@ -118,14 +138,14 @@ var SocketRouter;
         function Server() {
             _super.apply(this, arguments);
         }
-        Server.prototype.send = function (socket, path, data) {
+        Server.prototype.send = function (socket, path, data, callback) {
             var _this = this;
             return new Promise(function (resolve, reject) {
                 var msg = {
                     path: path,
                     data: data
                 };
-                msg.replyId = _this.queCallback({ resolve: resolve, reject: reject });
+                msg.replyId = _this.queCallback({ resolve: resolve, reject: reject, callback: callback });
                 _this.sendMessage(socket, msg);
             });
         };
