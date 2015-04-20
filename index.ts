@@ -6,7 +6,7 @@ module SocketRouter {
         private _callbacks = [];
 
 
-        route<T> (path : string, handler : ((data?) => Promise<T>) | ((reply? : Reply<T>, data?) => void)) {
+        route<T> (path : string, handler : ((data?) => Promise<T>) | ((data?, reply? : Reply<T>) => void)) {
             path = path.replace(/\s/g, '').toLowerCase();
             if (typeof this._routesTable[path] !== 'undefined') {
                 throw new Error('Route path "' + path + '" already taken');
@@ -51,20 +51,19 @@ module SocketRouter {
         }
 
         protected fireHandler (handler, socket, msg) {
+            var reply : any = (data) => {
+                this.reply(socket, msg.replyId, data);
+            };
+            reply.error = (error) => {
+                this.replyError(socket, msg.replyId, error);
+            };
+            var h = handler(msg.data, reply);
             if(handler instanceof Promise) {
-                handler(msg.data).then((data) => {
+                h.then((data) => {
                     this.reply(socket, msg.replyId, data);
                 }).catch((error) => {
                     this.replyError(socket, msg.replyId, error);
                 });
-            } else {
-                var reply : any = (data) => {
-                    this.reply(socket, msg.replyId, data);
-                };
-                reply.error = (error) => {
-                    this.replyError(socket, msg.replyId, error);
-                };
-                handler(reply, msg.data);
             }
         }
 

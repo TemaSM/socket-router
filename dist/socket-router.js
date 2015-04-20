@@ -7,7 +7,7 @@ var __extends = this.__extends || function (d, b) {
 
 var SocketRouter;
 ;!function(SocketRouter) {
-    var _Base = (function () {
+     var _Base = (function () {
         function _Base() {
             this._routesTable = {};
             this._callbacks = [];
@@ -57,21 +57,19 @@ var SocketRouter;
         };
         _Base.prototype.fireHandler = function (handler, socket, msg) {
             var _this = this;
+            var reply = function (data) {
+                _this.reply(socket, msg.replyId, data);
+            };
+            reply.error = function (error) {
+                _this.replyError(socket, msg.replyId, error);
+            };
+            var h = handler(msg.data, reply);
             if (handler instanceof Promise) {
-                handler(msg.data).then(function (data) {
+                h.then(function (data) {
                     _this.reply(socket, msg.replyId, data);
                 }).catch(function (error) {
                     _this.replyError(socket, msg.replyId, error);
                 });
-            }
-            else {
-                var reply = function (data) {
-                    _this.reply(socket, msg.replyId, data);
-                };
-                reply.error = function (error) {
-                    _this.replyError(socket, msg.replyId, error);
-                };
-                handler(reply, msg.data);
             }
         };
         _Base.prototype.reply = function (socket, replyId, data) {

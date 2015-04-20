@@ -2,6 +2,7 @@
 Easily route communication over socket connection.  
 Module supports both standard socket connections and WebSockets.   
 Module also allows routes to optionally reply to messages received from clients. 
+Support for es6 Promises
 
 ## Install
     $ npm install socket-router --save
@@ -13,17 +14,17 @@ Module also allows routes to optionally reply to messages received from clients.
 
 #### server.***listen*** ( socket )
 
-#### server.***route*** ( path, callback( reply, data ) )
+#### server.***route*** ( path, callback( data, reply ) )
 
-#### server.***send*** ( socket, path, callback( reply, data ) )
+#### server.***send*** ( socket, path, callback( data, reply ) )
 
 ### Client
 
 #### server.***listen*** ( socket )
 
-#### server.***route*** ( path, callback( reply, data ) )
+#### server.***route*** ( path, callback( data, reply ) )
 
-#### server.***send*** ( path, callback( reply, data ) )
+#### server.***send*** ( path, callback( data, reply ) )
 
 ### Reply ( data )
 
@@ -52,7 +53,7 @@ socketServer.on('connection', function (socket) {
     server.listen(new JsonSocket(socket));
 });
 
-server.route('addition', function(reply, data) {
+server.route('addition', function(data, reply) {
     console.log(data);
     reply({ result: data.a + data.b });
 });
@@ -113,7 +114,7 @@ server.route('*', function() {
     console.log("Oh.");
 });
 
-server.route('addition', function(reply, data) {
+server.route('addition', function(data, reply) {
     console.log(data);
     reply({ result: data.a + data.b });
 });

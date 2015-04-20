@@ -1,14 +1,7 @@
 declare module SocketRouter {
     class _Base {
-        private _routesTable;
-        private _callbacks;
-        route<T>(path: string, handler: ((data?) => Promise<T>) | ((reply?: Reply<T>, data?) => void)): void;
+        route<T>(path: string, handler: ((data?) => Promise<T>) | ((data?, reply?: Reply<T>) => void)): void;
         listen(socket: any): void;
-        protected fireHandler(handler: any, socket: any, msg: any): void;
-        protected reply(socket: any, replyId: any, data: any): void;
-        protected replyError(socket: any, replyId: any, error: Error | string): void;
-        protected queCallback(callback: any): number;
-        protected sendMessage(socket: any, msg: any): void;
     }
     interface Reply<T> {
         (data?: T): void;
