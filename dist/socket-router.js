@@ -64,7 +64,7 @@ var SocketRouter;
                 _this.replyError(socket, msg.replyId, error);
             };
             var h = handler(msg.data, reply);
-            if (handler instanceof Promise) {
+            if (h instanceof Promise) {
                 h.then(function (data) {
                     _this.reply(socket, msg.replyId, data);
                 }).catch(function (error) {

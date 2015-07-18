@@ -58,7 +58,7 @@ module SocketRouter {
                 this.replyError(socket, msg.replyId, error);
             };
             var h = handler(msg.data, reply);
-            if(handler instanceof Promise) {
+            if(h instanceof Promise) {
                 h.then((data) => {
                     this.reply(socket, msg.replyId, data);
                 }).catch((error) => {
